@@ -1,0 +1,275 @@
+%pip install tensorflow 
+
+
+
+import tensorflow as tf
+from keras.models import Sequential
+from keras.datasets import mnist
+import matplotlib.pyplot as plt
+import numpy as np
+import random
+
+
+
+
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+# Normalize input by dividing by 255
+x_train = x_train / 255.0
+x_test = x_test / 255.0
+
+
+
+
+
+import keras
+
+model = keras.Sequential()
+
+model.add(keras.layers.Flatten(input_shape=(28, 28)))
+model.add(keras.layers.Dense(128, activation='relu'))
+model.add(keras.layers.Dense(10, activation='softmax'))
+
+
+
+
+
+
+model.compile(
+    optimizer='sgd',
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+H = model.fit(
+    x_train,
+    y_train,
+    validation_data=(x_test, y_test),
+    epochs=5
+)
+
+
+
+
+
+test_loss, test_acc = model.evaluate(x_test, y_test)
+
+print("Loss = %.3f" % test_loss)
+print("Accuracy = %.3f" % test_acc)
+
+n = random.randint(0, 9999)
+
+plt.imshow(x_test[n])
+plt.show()
+
+prediction = model.predict(x_test)
+
+print(
+    "The handwritten number in the image is %d"
+    % np.argmax(prediction[n])
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%pip install tensorflow
+→ Installs the TensorFlow library in the Jupyter Notebook environment.
+
+import tensorflow as tf
+→ Imports TensorFlow and gives it the short name "tf".
+
+from keras.models import Sequential
+→ Imports the Sequential model from Keras.
+→ Sequential allows us to create a neural network layer by layer.
+
+from keras.datasets import mnist
+→ Imports the MNIST handwritten digit dataset from Keras.
+
+import matplotlib.pyplot as plt
+→ Imports Matplotlib for displaying images and creating plots.
+
+import numpy as np
+→ Imports NumPy for numerical and array operations.
+
+import random
+→ Imports Python's random module to generate random numbers.
+
+
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+→ Loads the MNIST dataset.
+→ x_train contains training images.
+→ y_train contains labels of training images.
+→ x_test contains testing images.
+→ y_test contains labels of testing images.
+
+
+# Normalize input by dividing by 255
+→ This is a comment explaining the next two lines.
+
+x_train = x_train / 255.0
+→ Normalizes the training image pixels.
+→ Original pixel values range from 0 to 255.
+→ After division, values range from 0 to 1.
+
+x_test = x_test / 255.0
+→ Normalizes the testing images in the same way.
+→ Pixel values become values between 0 and 1.
+
+
+import keras
+→ Imports the Keras deep learning library.
+
+
+model = keras.Sequential()
+→ Creates an empty Sequential neural network model.
+→ Layers can now be added one by one.
+
+
+model.add(keras.layers.Flatten(input_shape=(28, 28)))
+→ Flatten converts each 28×28 image into a one-dimensional array.
+→ 28 × 28 = 784 values.
+→ Therefore, each image becomes an array of 784 pixels.
+
+
+model.add(keras.layers.Dense(128, activation='relu'))
+→ Adds a fully connected Dense layer with 128 neurons.
+→ ReLU activation function is used.
+→ ReLU helps the neural network learn non-linear patterns.
+
+
+model.add(keras.layers.Dense(10, activation='softmax'))
+→ Adds the output layer with 10 neurons.
+→ There are 10 output neurons because MNIST contains digits 0 to 9.
+→ Softmax converts the outputs into probabilities.
+→ The class with the highest probability is the predicted digit.
+
+
+model.compile(
+→ Configures the neural network before training.
+
+optimizer='sgd',
+→ Uses Stochastic Gradient Descent (SGD) as the optimizer.
+→ The optimizer updates the weights of the neural network during training.
+
+loss='sparse_categorical_crossentropy',
+→ Specifies the loss function.
+→ It measures how different the predicted class is from the actual class.
+→ It is suitable when labels are integer values such as 0, 1, 2, ..., 9.
+
+metrics=['accuracy']
+→ Specifies accuracy as the performance metric.
+→ Accuracy tells us the percentage of correctly classified images.
+
+)
+→ Ends the model compilation.
+
+
+H = model.fit(
+→ Trains the neural network using the training dataset.
+→ The training history is stored in variable H.
+
+x_train,
+→ Training images are given as input.
+
+y_train,
+→ Correct digit labels are given as target outputs.
+
+validation_data=(x_test, y_test),
+→ Uses the test dataset for validation after each epoch.
+→ This helps check how well the model performs on unseen images.
+
+epochs=5
+→ The model will go through the complete training dataset 5 times.
+
+)
+→ Ends the model training.
+
+
+test_loss, test_acc = model.evaluate(x_test, y_test)
+→ Evaluates the trained model using the test dataset.
+→ test_loss stores the loss value.
+→ test_acc stores the accuracy value.
+
+
+print("Loss = %.3f" % test_loss)
+→ Prints the test loss.
+→ %.3f displays the value up to 3 decimal places.
+
+
+print("Accuracy = %.3f" % test_acc)
+→ Prints the test accuracy.
+→ %.3f displays the accuracy up to 3 decimal places.
+
+
+n = random.randint(0, 9999)
+→ Generates a random number between 0 and 9999.
+→ This number is used to select a random test image.
+
+
+plt.imshow(x_test[n])
+→ Displays the randomly selected MNIST image.
+
+
+plt.show()
+→ Shows the image on the screen.
+
+
+prediction = model.predict(x_test)
+→ Uses the trained model to predict the digit for all test images.
+→ prediction contains the probability of each digit from 0 to 9.
+
+
+np.argmax(prediction[n])
+→ Finds the index of the highest probability for the selected image.
+→ The index represents the predicted digit.
+
+
+print(
+→ Prints the final prediction.
+
+"The handwritten number in the image is %d"
+→ Displays a message containing the predicted digit.
+
+% np.argmax(prediction[n])
+→ Inserts the predicted digit into the message.
+
+)
+→ Ends the print statement.

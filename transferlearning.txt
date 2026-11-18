@@ -1,0 +1,725 @@
+!pip install importlib-resources
+
+
+
+import tensorflow_datasets as tfds
+import tensorflow as tf
+from tensorflow.keras.utils import to_categorical
+
+
+
+
+
+## Loading images and labels
+(train_ds, train_labels), (test_ds, test_labels) = tfds.load("tf_flowers",
+    split=["train[60%:70%]", "train[70%:80%]"], ## Train test split
+    batch_size=-1,
+    as_supervised=True,  # Include labels
+)
+
+
+
+
+
+## check existing image size
+train_ds[0].shape
+
+
+
+
+
+## Resizing images
+train_ds = tf.image.resize(train_ds, (150, 150))
+test_ds = tf.image.resize(test_ds, (150, 150))
+
+
+
+
+
+train_labels
+
+
+
+
+## Transforming labels to correct format
+train_labels = to_categorical(train_labels, num_classes=5)
+test_labels = to_categorical(test_labels, num_classes=5)
+
+
+
+
+train_labels[0]
+
+
+
+from tensorflow.keras.applications.vgg16 import VGG16
+from tensorflow.keras.applications.vgg16 import preprocess_input
+
+
+
+train_ds[0].shape
+
+
+
+## Loading VGG16 model
+base_model = VGG16(weights="imagenet", include_top=False, input_shape=train_ds[0].shape)
+
+
+
+
+## will not train base mode
+# Freeze Parameters in model's lower convolutional layers
+base_model.trainable = False
+
+
+
+
+## Preprocessing input
+train_ds = preprocess_input(train_ds)
+test_ds = preprocess_input(test_ds)
+
+
+
+
+## model details
+base_model.summary()
+
+
+
+
+
+
+#add our layers on top of this model
+from tensorflow.keras import layers, models
+
+flatten_layer = layers.Flatten()
+dense_layer_1 = layers.Dense(50, activation='relu')
+dense_layer_2 = layers.Dense(20, activation='relu')
+prediction_layer = layers.Dense(5, activation='softmax')
+
+
+model = models.Sequential([
+    base_model,
+    flatten_layer,
+    dense_layer_1,
+    dense_layer_2,
+    prediction_layer
+])
+
+
+
+
+from tensorflow.keras.callbacks import EarlyStopping
+
+model.compile(
+    optimizer='adam',
+    loss='categorical_crossentropy',
+    metrics=['accuracy'],
+)
+
+
+
+
+
+es = EarlyStopping(monitor='val_accuracy', mode='max', patience=5,  restore_best_weights=True)
+
+
+
+
+
+history=model.fit(train_ds, train_labels, epochs=50, validation_split=0.2, batch_size=32, callbacks=[es])
+
+
+
+
+
+
+los,accurac=model.evaluate(test_ds,test_labels)
+print("Loss: ",los,"Accuracy: ", accurac)
+
+
+
+
+
+import matplotlib.pyplot as plt
+plt.plot(history.history['accuracy'])
+plt.title('ACCURACY')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['train'],loc='upper left')
+plt.show()
+
+
+
+import numpy as np
+import pandas as pd
+y_pred = model.predict(test_ds)
+y_classes = [np.argmax(element) for element in y_pred]
+#to_categorical(y_classes, num_classes=5)
+#to_categorical(test_labels, num_classes=5)
+print(y_classes[:10])
+print("\nTest")
+print(test_labels[:10])
+
+
+
+
+
+
+
+
+
+
+
+
+import random
+import numpy as np
+import matplotlib.pyplot as plt
+# Flower class names in TF Flowers
+class_names = [
+    "Daisy",
+    "Dandelion",
+    "Roses",
+    "Sunflowers",
+    "Tulips"
+]
+# Select a random image
+i = random.randint(0, len(test_ds) - 1)
+# Predict the image
+prediction = model.predict(test_ds[i:i+1], verbose=0)[0]
+predicted_class = np.argmax(prediction)
+# Actual class
+actual_class = np.argmax(test_labels[i])
+# Convert preprocessed image back for displaying
+image = test_ds[i].numpy()
+# Reverse VGG16 preprocess_input
+image = image + np.array([103.939, 116.779, 123.68])
+image = image[:, :, ::-1]
+image = np.clip(image / 255.0, 0, 1)
+# Display image
+plt.figure(figsize=(8, 8))
+plt.imshow(image)
+plt.title(
+    f"Actual: {class_names[actual_class]} | "
+    f"Predicted: {class_names[predicted_class]}",
+    fontsize=16,
+    fontweight="bold"
+)
+plt.axis("off")
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+print("""
+==================== VGG16 TRANSFER LEARNING - COMPLETE EXPLANATION ====================
+
+AIM:
+This program performs flower image classification using Transfer Learning with the
+pre-trained VGG16 Convolutional Neural Network (CNN).
+
+The TF Flowers dataset is used. The images are resized, preprocessed and given to
+VGG16 for feature extraction. New fully connected layers are added to classify
+the images into 5 flower classes.
+
+
+1. IMPORTING LIBRARIES
+----------------------
+
+TensorFlow and TensorFlow Datasets are imported to load and process the images.
+The to_categorical function is used to convert class labels into one-hot encoded
+format.
+
+NumPy and Matplotlib are later used for prediction and visualization.
+
+
+2. LOADING THE TF FLOWERS DATASET
+---------------------------------
+
+The "tf_flowers" dataset is loaded using TensorFlow Datasets.
+
+The dataset is divided using:
+
+    train[60%:70%]  -> Training data
+    train[70%:80%]  -> Testing data
+
+batch_size=-1 loads all selected images at once.
+
+as_supervised=True returns both the image and its corresponding class label.
+
+The dataset contains 5 flower classes.
+
+
+3. CHECKING IMAGE SIZE
+----------------------
+
+train_ds[0].shape is used to check the original shape of an image.
+
+An image normally contains:
+
+    Height × Width × 3
+
+The value 3 represents the RGB color channels.
+
+
+4. RESIZING IMAGES
+------------------
+
+All images are resized to:
+
+    150 × 150 pixels
+
+Therefore, the final image shape becomes:
+
+    150 × 150 × 3
+
+Resizing is necessary because the neural network requires images of a fixed size.
+
+
+5. CONVERTING LABELS
+--------------------
+
+The original labels are integer values representing the flower classes.
+
+The to_categorical() function converts these integer labels into one-hot encoded
+labels.
+
+For example:
+
+    Class 0 -> [1, 0, 0, 0, 0]
+    Class 1 -> [0, 1, 0, 0, 0]
+    Class 2 -> [0, 0, 1, 0, 0]
+
+Since there are 5 flower classes, the output contains 5 values.
+
+
+6. LOADING PRE-TRAINED VGG16
+----------------------------
+
+VGG16 is a pre-trained Convolutional Neural Network.
+
+The model is loaded using:
+
+    VGG16(weights="imagenet", include_top=False)
+
+weights="imagenet" means that VGG16 uses weights already learned from the
+ImageNet dataset.
+
+include_top=False removes the original final classification layers of VGG16.
+
+This is done because the original VGG16 classifier is designed for ImageNet,
+whereas our problem contains only 5 flower classes.
+
+
+7. TRANSFER LEARNING
+--------------------
+
+This program uses Transfer Learning.
+
+Transfer Learning means using knowledge learned by an existing pre-trained
+model and applying it to a new problem.
+
+VGG16 has already learned useful visual features such as:
+
+    Edges
+    Textures
+    Shapes
+    Patterns
+    Object features
+
+These learned features can be reused for flower classification.
+
+
+8. FREEZING THE VGG16 MODEL
+---------------------------
+
+base_model.trainable = False
+
+This freezes the pre-trained VGG16 layers.
+
+Therefore, the original VGG16 weights are not changed during training.
+
+Only the new classification layers added at the end of the model are trained.
+
+This reduces training time and computational requirements.
+
+
+9. PREPROCESSING INPUT IMAGES
+-----------------------------
+
+preprocess_input() is used to convert the images into the input format expected
+by VGG16.
+
+This ensures that the images are properly prepared before being passed to the
+pre-trained network.
+
+
+10. ADDING NEW CLASSIFICATION LAYERS
+------------------------------------
+
+The original VGG16 classification layers were removed.
+
+Our own layers are added:
+
+    Flatten
+        ↓
+    Dense(50, ReLU)
+        ↓
+    Dense(20, ReLU)
+        ↓
+    Dense(5, Softmax)
+
+The Flatten layer converts the feature maps produced by VGG16 into a
+one-dimensional vector.
+
+The first Dense layer contains 50 neurons and uses the ReLU activation function.
+
+The second Dense layer contains 20 neurons and also uses ReLU.
+
+The final Dense layer contains 5 neurons because there are 5 flower classes.
+
+
+11. SOFTMAX OUTPUT
+------------------
+
+The final layer uses:
+
+    activation='softmax'
+
+Softmax converts the output values into probabilities.
+
+For example:
+
+    Daisy       -> 0.05
+    Dandelion   -> 0.10
+    Roses       -> 0.05
+    Sunflowers  -> 0.70
+    Tulips      -> 0.10
+
+The class with the highest probability is selected as the predicted class.
+
+In this example:
+
+    Predicted class = Sunflowers
+
+
+12. MODEL ARCHITECTURE
+----------------------
+
+The complete model works as follows:
+
+    Input Image
+         ↓
+    Pre-trained VGG16
+         ↓
+    Feature Extraction
+         ↓
+    Flatten
+         ↓
+    Dense Layer - 50 neurons
+         ↓
+    Dense Layer - 20 neurons
+         ↓
+    Dense Layer - 5 neurons
+         ↓
+    Softmax
+         ↓
+    Flower Class
+
+
+13. COMPILING THE MODEL
+-----------------------
+
+The model is compiled using:
+
+    optimizer = Adam
+    loss = categorical_crossentropy
+    metric = accuracy
+
+Adam is the optimizer used to update the trainable weights.
+
+Categorical cross-entropy is used as the loss function because this is a
+multi-class classification problem with one-hot encoded labels.
+
+Accuracy measures the percentage of correctly classified images.
+
+
+14. EARLY STOPPING
+------------------
+
+EarlyStopping monitors validation accuracy.
+
+The parameter:
+
+    patience=5
+
+means that if validation accuracy does not improve for 5 consecutive epochs,
+training is stopped.
+
+restore_best_weights=True restores the weights from the best-performing epoch.
+
+This helps reduce unnecessary training and can help prevent overfitting.
+
+
+15. TRAINING THE MODEL
+----------------------
+
+The model is trained using:
+
+    epochs=50
+    batch_size=32
+
+The maximum number of epochs is 50.
+
+A batch size of 32 means that 32 images are processed at a time.
+
+validation_split=0.2 means that 20% of the training data is used for validation.
+
+The EarlyStopping callback can stop training before 50 epochs if the validation
+accuracy stops improving.
+
+
+16. EVALUATING THE MODEL
+------------------------
+
+model.evaluate() is used to test the trained model using the test dataset.
+
+It returns:
+
+    Loss
+    Accuracy
+
+Loss indicates the prediction error of the model.
+
+Accuracy indicates the percentage of correctly classified test images.
+
+
+17. PLOTTING ACCURACY
+---------------------
+
+The training accuracy stored in history.history['accuracy'] is plotted.
+
+The graph shows how the model's training accuracy changes across the epochs.
+
+This helps us understand the learning behavior of the model.
+
+
+18. MAKING PREDICTIONS
+----------------------
+
+model.predict(test_ds) generates predictions for all test images.
+
+For every image, the model produces 5 probability values, one for each flower
+class.
+
+For example:
+
+    [0.05, 0.10, 0.70, 0.10, 0.05]
+
+np.argmax() finds the position of the largest probability.
+
+Therefore, the class with the highest probability becomes the prediction.
+
+
+19. RANDOM IMAGE PREDICTION
+---------------------------
+
+At the end of the program, a random image is selected from the test dataset.
+
+The model predicts the class of this image.
+
+The actual class is obtained from the test label.
+
+The image is then displayed with:
+
+    Actual: <actual flower>
+    Predicted: <predicted flower>
+
+This allows us to visually compare the actual flower class with the model's
+prediction.
+
+
+20. FLOWER CLASS NAMES
+----------------------
+
+The five flower classes used for displaying the prediction are:
+
+    0 -> Daisy
+    1 -> Dandelion
+    2 -> Roses
+    3 -> Sunflowers
+    4 -> Tulips
+
+
+21. FINAL PURPOSE
+-----------------
+
+The main purpose of this program is to demonstrate image classification using
+Transfer Learning.
+
+Instead of training a CNN completely from the beginning, a pre-trained VGG16
+network is used for feature extraction, and new fully connected layers are
+trained for the specific flower classification task.
+
+
+==================== SIMPLE FLOW ====================
+
+TF Flowers Dataset
+        ↓
+Load Images and Labels
+        ↓
+Resize Images to 150 × 150
+        ↓
+One-Hot Encode Labels
+        ↓
+Load Pre-trained VGG16
+        ↓
+Freeze VGG16
+        ↓
+Preprocess Images
+        ↓
+Extract Image Features
+        ↓
+Flatten
+        ↓
+Dense 50 ReLU
+        ↓
+Dense 20 ReLU
+        ↓
+Dense 5 Softmax
+        ↓
+Train Model
+        ↓
+Evaluate Accuracy
+        ↓
+Predict Flower
+        ↓
+Display Random Image with
+Actual and Predicted Class
+
+
+==================== VIVA ANSWERS ====================
+
+Q1. What is the aim of the program?
+
+Answer:
+The aim is to classify flower images using Transfer Learning with a pre-trained
+VGG16 convolutional neural network.
+
+
+Q2. What is VGG16?
+
+Answer:
+VGG16 is a pre-trained convolutional neural network used for image feature
+extraction and classification.
+
+
+Q3. What is Transfer Learning?
+
+Answer:
+Transfer Learning is the technique of using knowledge learned by a pre-trained
+model for a new related task.
+
+
+Q4. Why is VGG16 frozen?
+
+Answer:
+VGG16 is frozen so that its pre-trained weights are not changed during training.
+
+
+Q5. Why is include_top=False used?
+
+Answer:
+It removes the original VGG16 classification layers so that a new classifier
+can be added for the 5 flower classes.
+
+
+Q6. Why is Softmax used?
+
+Answer:
+Softmax converts the final outputs into probabilities for the 5 classes.
+
+
+Q7. Why is categorical cross-entropy used?
+
+Answer:
+It is used because this is a multi-class classification problem with
+one-hot encoded labels.
+
+
+Q8. Why is Early Stopping used?
+
+Answer:
+Early Stopping stops training when validation accuracy stops improving and
+helps reduce unnecessary training and overfitting.
+
+
+Q9. What does the Flatten layer do?
+
+Answer:
+The Flatten layer converts multi-dimensional feature maps into a one-dimensional
+vector before passing them to the Dense layers.
+
+
+Q10. What does preprocess_input() do?
+
+Answer:
+It preprocesses the input images into the format expected by the pre-trained
+VGG16 model.
+
+
+Q11. What does np.argmax() do?
+
+Answer:
+np.argmax() returns the index of the class having the highest predicted
+probability.
+
+
+Q12. What is the final output?
+
+Answer:
+The final output is the predicted flower class along with the actual flower
+class for a randomly selected test image.
+""")

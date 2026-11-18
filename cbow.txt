@@ -1,0 +1,485 @@
+!pip install gensim
+import matplotlib.pyplot as plt
+import seaborn as sns
+import matplotlib as mpl
+import matplotlib.pylab as pylab
+import numpy as np
+%matplotlib inline
+from nltk.tokenize import sent_tokenize, word_tokenize
+import warnings
+warnings.filterwarnings(action = 'ignore')
+import gensim
+from gensim.models import Word2Vec
+import re
+import bs4 as bs
+import urllib.request
+import nltk
+
+
+
+
+nltk.download('punkt')
+nltk.download('stopwords')
+
+
+
+
+
+req = urllib.request.Request(
+    "https://en.wikipedia.org/wiki/Machine_learning",
+    headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
+)
+scrapped_data = urllib.request.urlopen(req)
+article = scrapped_data.read()
+paresed_article = bs.BeautifulSoup(article, 'lxml')
+paragraphs = paresed_article.find_all('p')
+article_text = ""
+for p in paragraphs:
+    article_text += p.text
+sentences = article_text
+
+
+
+print(article_text)
+
+
+
+
+
+sentences="""Alice 23 opened the door and found that it led into a small 90
+passage, not much larger than a rat-hole:  she knelt down and
+looked along the passage into the loveliest garden you ever saw.
+How she longed to get out of that dark hall, and wander about
+among those beds of bright flowers and those cool fountains, but
+she could not even get her head through the doorway; `and even if
+my head would go through,' (thought) $poor Alice, `it would be of
+very little use without my shoulders.  Oh, how I wish
+I could shut up like a telescope!  I think I could, if I only
+know how to begin.'  For, you see, so many out-of-the-way things
+had happened lately, that Alice had begun to think that very few
+things indeed were really impossible.
+
+
+"""
+
+
+
+
+
+
+sentences = re.sub('[^A-Za-z0-9]+', ' ', sentences)
+sentences = re.sub(r'(?:^| )\w(?:$| )', ' ', sentences).strip()
+print(sentences)
+
+
+
+
+
+
+
+import nltk
+nltk.download('punkt_tab')
+
+# remove special characters
+sentences = re.sub('[^A-Za-z]+', ' ', sentences)
+
+# remove 1 letter words
+sentences = re.sub(r'(?:^| )\w(?:$| )', ' ', sentences).strip()
+
+# lower all characters
+sentences = sentences.lower()
+
+all_sent=nltk.sent_tokenize(sentences)
+all_words=[nltk.word_tokenize(sent) for sent in all_sent]
+
+from nltk.corpus import stopwords
+for i in range(len(all_words)):
+  all_words[i]=[w for w in all_words[i] if w not in stopwords.words('english')]
+data =all_words
+data1=data[0]
+
+
+
+
+
+
+model1 = gensim.models.Word2Vec(data, min_count = 1, vector_size = 52, window = 5)
+
+
+
+
+
+vocabulary = model1.wv.index_to_key
+print(vocabulary)
+
+
+
+
+wrd='door'
+#wrd=['subset','machine', 'learning','closely','related']
+v1=model1.wv[wrd]
+similar_words=model1.wv.most_similar(wrd)
+for x in similar_words:
+  print(x)
+
+
+
+
+
+#print(data)
+
+dat = []
+for i in range(2, len(data) - 2):
+    context = [data1[i - 2], data1[i - 1], data1[i+1], data1[i + 2]]
+    target = data1[i]
+    dat.append((context, target))
+print(dat[:5])
+#print(dat[1][0])
+
+
+
+
+# Re-populate dat correctly by looping over the length of data1 (the flat word list)
+dat = []
+for i in range(2, len(data1) - 2):
+    context = [data1[i - 2], data1[i - 1], data1[i+1], data1[i + 2]]
+    target = data1[i]
+    dat.append((context, target))
+
+i = 3
+print("Context words:", dat[i][0], "| Target word:", dat[i][1])
+print("Predicted target words:", model1.predict_output_word(dat[i][0]))
+
+
+
+
+
+
+
+from sklearn.decomposition import PCA
+from matplotlib import pyplot
+
+# Get word vectors and the vocabulary list using the updated Gensim API
+X = model1.wv.vectors
+words = model1.wv.index_to_key
+
+pca = PCA(n_components=2)
+result = pca.fit_transform(X)
+
+pyplot.figure(figsize=(10, 8))
+pyplot.scatter(result[:, 0], result[:, 1])
+for i, word in enumerate(words):
+   pyplot.annotate(word, xy=(result[i, 0], result[i, 1]))
+pyplot.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+2)pranav ijatkar
+import re
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras import layers, models
+
+# -----------------------------
+# 1. Create Corpus
+# -----------------------------
+
+corpus = [
+    "the quick brown fox jumps over the lazy dog",
+    "the quick brown dog jumps over the lazy fox",
+    "the cat sits on the mat",
+    "the dog sits on the rug",
+    "machine learning learns patterns from data",
+    "deep learning models learn patterns",
+    "word embeddings represent words as vectors",
+    "similar words occur in similar contexts",
+    "the model learns word context",
+    "machine learning uses data and patterns",
+    "deep learning uses neural networks",
+    "the fox jumps over the dog",
+    "the cat and dog are animals",
+    "word context helps predict words",
+    "neural networks learn useful features"
+]
+
+# Tokenization
+tokens = [re.findall(r"[a-z]+", s.lower()) for s in corpus]
+
+# Create vocabulary
+vocab = sorted(set(w for sentence in tokens for w in sentence))
+
+# Word-to-ID and ID-to-word mappings
+word2id = {w: i for i, w in enumerate(vocab)}
+id2word = {i: w for w, i in word2id.items()}
+
+print("Vocabulary size:", len(vocab))
+print("Sample tokens:", tokens[0])
+
+
+# -----------------------------
+# 2. Create Context-Target Pairs
+# -----------------------------
+
+window = 2
+contexts, targets = [], []
+
+for sentence in tokens:
+    for i in range(window, len(sentence) - window):
+        context = sentence[i-2:i] + sentence[i+1:i+3]
+
+        contexts.append([word2id[w] for w in context])
+        targets.append(word2id[sentence[i]])
+
+# Convert to NumPy arrays
+X = np.array(contexts)
+y = np.array(targets)
+
+print("Training examples:", len(X))
+print("Context words:", [id2word[i] for i in X[0]])
+print("Target word:", id2word[y[0]])
+
+
+# -----------------------------
+# 3. Build Neural Network Model
+# -----------------------------
+
+model = models.Sequential([
+    layers.Input(shape=(4,)),
+    layers.Embedding(len(vocab), 16),
+    layers.GlobalAveragePooling1D(),
+    layers.Dense(len(vocab), activation="softmax")
+])
+
+
+# -----------------------------
+# 4. Compile Model
+# -----------------------------
+
+model.compile(
+    optimizer="adam",
+    loss="sparse_categorical_crossentropy",
+    metrics=["accuracy"]
+)
+
+
+# -----------------------------
+# 5. Train Model
+# -----------------------------
+
+history = model.fit(
+    X,
+    y,
+    epochs=200,
+    batch_size=4,
+    verbose=0
+)
+
+print("Model training completed!")
+print("Final accuracy:", round(history.history["accuracy"][-1], 3))
+
+
+# -----------------------------
+# 6. Predict Target Word
+# -----------------------------
+
+i = 0
+
+probabilities = model.predict(
+    X[i:i+1],
+    verbose=0
+)[0]
+
+predicted = np.argmax(probabilities)
+
+print("Context:", [id2word[int(w)] for w in X[i]])
+print("Actual target:", id2word[y[i]])
+print("Predicted target:", id2word[predicted])
+
+
+# -----------------------------
+# 7. Display Top 3 Predictions
+# -----------------------------
+
+print("\nTop predictions:")
+
+for j in np.argsort(probabilities)[-3:][::-1]:
+    print(
+        id2word[j],
+        round(float(probabilities[j]), 3)
+    )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+3)avyay
+import numpy as np
+import scipy
+import pandas as pd
+import gensim
+from gensim.models import Word2Vec
+
+print("NumPy:", np.__version__)
+print("SciPy:", scipy.__version__)
+print("Pandas:", pd.__version__)
+print("Gensim:", gensim.__version__)
+print("All imports successful!")
+
+
+import matplotlib.pyplot as plt
+import re
+import nltk
+import warnings
+from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.corpus import stopwords
+from gensim.models import Word2Vec
+
+warnings.filterwarnings("ignore")
+%matplotlib inline
+
+
+# Check NLTK resources
+for resource in ["tokenizers/punkt", "tokenizers/punkt_tab", "corpora/stopwords"]:
+    try:
+        nltk.data.find(resource)
+        print(resource, "available")
+    except LookupError:
+        print(resource, "missing. Download it before going offline.")
+
+
+# Input text
+sentences = """Machine learning helps computers learn from data.
+Students use Python to build intelligent applications.
+Neural networks can recognize patterns in images and text.
+Deep learning models require training data and computing power.
+Natural language processing allows computers to understand human language.
+Word embeddings represent words as numerical vectors.
+Artificial intelligence is transforming healthcare, education, and finance.
+Researchers continuously improve machine learning algorithms."""
+
+print(sentences)
+
+
+# Remove special characters
+sentences = re.sub(r"[^A-Za-z]+", " ", sentences)
+sentences = re.sub(r"\b\w\b", " ", sentences).strip()
+
+print(sentences)
+
+
+# Convert to lowercase and tokenize
+sentences = sentences.lower()
+
+all_sent = nltk.sent_tokenize(sentences)
+all_words = [nltk.word_tokenize(s) for s in all_sent]
+
+print(all_words)
+
+
+# Remove stop words
+stop_words = set(stopwords.words("english"))
+
+data = [
+    [w for w in sentence if w not in stop_words]
+    for sentence in all_words
+]
+
+data1 = data[0]
+
+print(data)
+
+
+# Train Word2Vec model
+model1 = Word2Vec(
+    sentences=data,
+    min_count=1,
+    vector_size=52,
+    window=5,
+    workers=1,
+    sg=0,
+    seed=42,
+    epochs=100
+)
+
+print("Word2Vec model trained.")
+
+
+# Display vocabulary
+vocabulary = model1.wv.index_to_key
+print(vocabulary)
+
+
+# Find similar words
+wrd = "machine"
+
+v1 = model1.wv[wrd]
+
+similar_words = model1.wv.most_similar(wrd)
+
+for x in similar_words:
+    print(x)
+
+
+# Create context-target pairs
+dat = []
+
+for i in range(2, len(data1) - 2):
+    context = [
+        data1[i-2],
+        data1[i-1],
+        data1[i+1],
+        data1[i+2]
+    ]
+
+    target = data1[i]
+
+    dat.append((context, target))
+
+print(dat[:10])
+
+
+# Predict target word from context
+i = min(1, len(dat) - 1)
+
+if dat:
+    print("Context:", dat[i][0])
+    print("Target:", dat[i][1])
+    print(
+        "Predictions:",
+        model1.predict_output_word(dat[i][0])
+    )
+else:
+    print("Not enough words to create context examples.")

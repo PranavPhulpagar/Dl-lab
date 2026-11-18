@@ -1,0 +1,369 @@
+import numpy as np
+import random
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense
+
+
+
+
+
+
+X_train = np.loadtxt('/home/pvg/Downloads/Dl3/DL2/input.csv', delimiter = ',')
+Y_train = np.loadtxt('/home/pvg/Downloads/Dl3/DL2/labels.csv', delimiter = ',')
+
+X_test = np.loadtxt('/home/pvg/Downloads/Dl3/DL2/input_test.csv', delimiter = ',')
+Y_test = np.loadtxt('/home/pvg/Downloads/Dl3/DL2/labels_test.csv', delimiter = ',')
+
+
+
+
+
+
+
+X_train = X_train.reshape(len(X_train), 100, 100, 3)
+Y_train = Y_train.reshape(len(Y_train), 1)
+
+X_test = X_test.reshape(len(X_test), 100, 100, 3)
+Y_test = Y_test.reshape(len(Y_test), 1)
+
+X_train = X_train/255.0
+X_test = X_test/255.0
+
+
+
+
+
+
+print("Shape of X_train: ", X_train.shape)
+print("Shape of Y_train: ", Y_train.shape)
+print("Shape of X_test: ", X_test.shape)
+print("Shape of Y_test: ", Y_test.shape)
+
+
+
+
+idx = random.randint(0, len(X_train))
+plt.imshow(X_train[idx, :])
+plt.show()
+
+
+
+
+
+model = Sequential([
+    Conv2D(32, (3,3), activation = 'relu', input_shape = (100, 100, 3)),
+    MaxPooling2D((2,2)),
+    
+    Conv2D(32, (3,3), activation = 'relu'),
+    MaxPooling2D((2,2)),
+    
+    Flatten(),
+    Dense(64, activation = 'relu'),
+    Dense(1, activation = 'sigmoid')
+])
+
+
+
+
+
+model.compile(loss = 'binary_crossentropy', optimizer = 'adam', metrics = ['accuracy'])
+
+
+
+
+
+model.fit(X_train, Y_train, epochs = 5, batch_size = 64)
+
+
+
+
+
+model.evaluate(X_test, Y_test)
+
+
+
+
+
+
+
+idx2 = random.randint(0, len(Y_test))
+plt.imshow(X_test[idx2, :])
+plt.show()
+
+y_pred = model.predict(X_test[idx2, :].reshape(1, 100, 100, 3))
+y_pred = y_pred > 0.5
+
+if(y_pred == 0):
+    pred = 'dog'
+else:
+    pred = 'cat'
+    
+print("Our model says it is a :", pred)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import numpy as np
+→ Imports NumPy for numerical operations and handling arrays.
+
+import random
+→ Imports the random module to select random images.
+
+import matplotlib.pyplot as plt
+→ Imports Matplotlib for displaying images.
+
+import tensorflow as tf
+→ Imports TensorFlow, which is used to build and train the deep learning model.
+
+from tensorflow.keras.models import Sequential
+→ Imports the Sequential model from Keras.
+→ Sequential allows us to create the CNN layer by layer.
+
+from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense
+→ Imports different layers required to build the CNN.
+→ Conv2D performs convolution operation.
+→ MaxPooling2D performs pooling.
+→ Flatten converts feature maps into a one-dimensional vector.
+→ Dense creates fully connected neural network layers.
+→ Input is used to define an input layer.
+
+
+X_train = np.loadtxt('/home/pvg/Downloads/Dl3/DL2/input.csv', delimiter = ',')
+→ Loads training image data from input.csv.
+→ np.loadtxt() reads numerical data from the CSV file.
+→ delimiter=',' indicates that values are separated by commas.
+
+
+Y_train = np.loadtxt('/home/pvg/Downloads/Dl3/DL2/labels.csv', delimiter = ',')
+→ Loads the labels corresponding to the training images.
+→ The labels indicate whether the image belongs to the dog or cat class.
+
+
+X_test = np.loadtxt('/home/pvg/Downloads/Dl3/DL2/input_test.csv', delimiter = ',')
+→ Loads the testing images from input_test.csv.
+
+
+Y_test = np.loadtxt('/home/pvg/Downloads/Dl3/DL2/labels_test.csv', delimiter = ',')
+→ Loads the correct labels for the testing images.
+
+
+X_train = X_train.reshape(len(X_train), 100, 100, 3)
+→ Reshapes the training data into image format.
+→ Each image has a size of 100 × 100 pixels.
+→ 3 represents the RGB color channels.
+→ Final format is:
+   Number of images × 100 × 100 × 3
+
+
+Y_train = Y_train.reshape(len(Y_train), 1)
+→ Reshapes the training labels into a column format.
+→ Each image has one corresponding label.
+
+
+X_test = X_test.reshape(len(X_test), 100, 100, 3)
+→ Reshapes the test images into 100 × 100 RGB images.
+
+
+Y_test = Y_test.reshape(len(Y_test), 1)
+→ Reshapes the test labels into a column format.
+
+
+X_train = X_train/255.0
+→ Normalizes the training image pixels.
+→ Original RGB pixel values are between 0 and 255.
+→ After division, values are between 0 and 1.
+→ Normalization helps the neural network train efficiently.
+
+
+X_test = X_test/255.0
+→ Normalizes the test images in the same way.
+
+
+print("Shape of X_train: ", X_train.shape)
+→ Prints the shape of the training image dataset.
+
+
+print("Shape of Y_train: ", Y_train.shape)
+→ Prints the shape of the training labels.
+
+
+print("Shape of X_test: ", X_test.shape)
+→ Prints the shape of the test image dataset.
+
+
+print("Shape of Y_test: ", Y_test.shape)
+→ Prints the shape of the test labels.
+
+
+idx = random.randint(0, len(X_train))
+→ Generates a random index from the training dataset.
+→ This is used to select a random training image.
+
+
+plt.imshow(X_train[idx, :])
+→ Displays the randomly selected training image.
+
+
+plt.show()
+→ Shows the image on the screen.
+
+
+model = Sequential([
+→ Creates a Sequential CNN model.
+→ Layers are added one after another.
+
+
+Conv2D(32, (3,3), activation = 'relu', input_shape = (100, 100, 3)),
+→ Creates the first convolutional layer.
+→ 32 means the layer has 32 filters.
+→ (3,3) means each filter is 3×3.
+→ ReLU is used as the activation function.
+→ input_shape=(100,100,3) means the input image is 100×100 pixels with 3 RGB channels.
+
+
+MaxPooling2D((2,2)),
+→ Adds a 2×2 max-pooling layer.
+→ Reduces the size of the feature maps.
+→ Helps reduce computation and keeps important features.
+
+
+Conv2D(32, (3,3), activation = 'relu'),
+→ Adds the second convolutional layer.
+→ It uses 32 filters of size 3×3.
+→ ReLU activation is used to learn important image features.
+
+
+MaxPooling2D((2,2)),
+→ Adds another 2×2 max-pooling layer.
+→ Further reduces the feature-map dimensions.
+
+
+Flatten(),
+→ Converts the 2D feature maps into a one-dimensional vector.
+→ This is necessary before passing the data to Dense layers.
+
+
+Dense(64, activation = 'relu'),
+→ Adds a fully connected layer containing 64 neurons.
+→ ReLU activation is used.
+→ This layer learns combinations of the features extracted by the CNN.
+
+
+Dense(1, activation = 'sigmoid')
+→ Creates the output layer.
+→ It contains one neuron because this is a binary classification problem.
+→ Sigmoid produces a value between 0 and 1.
+→ This value represents the probability of one of the two classes.
+
+
+])
+
+
+model.compile(loss = 'binary_crossentropy', optimizer = 'adam', metrics = ['accuracy'])
+→ Compiles the CNN before training.
+
+loss = 'binary_crossentropy'
+→ Uses binary cross-entropy as the loss function.
+→ It is suitable for binary classification such as dog vs cat.
+
+optimizer = 'adam'
+→ Uses the Adam optimization algorithm.
+→ Adam updates the model's weights during training.
+
+metrics = ['accuracy']
+→ Tells the model to calculate accuracy during training and evaluation.
+
+
+model.fit(X_train, Y_train, epochs = 5, batch_size = 64)
+→ Trains the CNN using the training images and labels.
+
+X_train
+→ Training images are given as input.
+
+Y_train
+→ Correct labels are given as target output.
+
+epochs = 5
+→ The complete training dataset is processed 5 times.
+
+batch_size = 64
+→ The model processes 64 images at a time before updating its weights.
+
+
+model.evaluate(X_test, Y_test)
+→ Evaluates the trained model using the test dataset.
+→ It returns the test loss and test accuracy.
+
+
+idx2 = random.randint(0, len(Y_test))
+→ Selects a random test image.
+
+
+plt.imshow(X_test[idx2, :])
+→ Displays the selected test image.
+
+
+plt.show()
+→ Shows the image.
+
+
+y_pred = model.predict(X_test[idx2, :].reshape(1, 100, 100, 3))
+→ Uses the trained CNN to predict the selected image.
+→ reshape() converts the single image into the required input format.
+→ 1 represents one image.
+→ 100 × 100 represents image dimensions.
+→ 3 represents RGB channels.
+
+
+y_pred = y_pred > 0.5
+→ Converts the predicted probability into a binary result.
+→ If probability > 0.5, prediction becomes True/1.
+→ If probability <= 0.5, prediction becomes False/0.
+
+
+if(y_pred == 0):
+→ Checks whether the prediction is 0.
+
+
+pred = 'dog'
+→ If prediction is 0, the image is classified as a dog.
+
+
+else:
+→ If prediction is not 0, the image belongs to the other class.
+
+
+pred = 'cat'
+→ If prediction is 1, the image is classified as a cat.
+
+
+print("Our model says it is a :", pred)
+→ Prints the final prediction made by the CNN.

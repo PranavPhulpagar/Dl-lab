@@ -1,0 +1,561 @@
+import tensorflow as tf
+import pandas as pd
+import numpy as np
+
+
+
+path = 'dataset/creditcardfraud-csv/creditcardfraud-csv/creditcard.csv'
+df = pd.read_csv(path)
+df
+
+
+
+df = df.drop(['Time','Class'], axis=1)
+df
+
+
+
+# Preprocess the data
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+
+x_train, x_test = train_test_split(df, test_size=0.2)
+
+
+
+print(x_train.shape[1])
+print(x_test.shape[1])
+type(x_train)
+
+
+from keras.models import Model, Sequential
+from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras import layers, models
+
+
+
+
+encoder = tf.keras.models.Sequential([
+    layers.Input(shape=(x_train.shape[1],)),
+    layers.Dense(64, activation='relu'),
+    layers.Dense(64, activation='relu'),
+    layers.Dense(20, activation='relu')
+])
+        
+decoder = tf.keras.models.Sequential([
+    layers.Input(shape=(20,)),
+    layers.Dense(64, activation='relu'),
+    layers.Dense(64, activation='relu'),
+    layers.Dense(x_train.shape[1], activation='linear')  # Use linear activation for reconstruction
+])
+        
+model = tf.keras.models.Sequential([
+    encoder,
+    decoder
+])
+
+
+
+
+model.compile(optimizer='adam', loss ='mean_squared_error')
+
+
+
+history = model.fit(
+    x_train, 
+    x_train, 
+    validation_data=(x_test,x_test),
+    epochs=5,
+    batch_size = 100,
+    shuffle=True
+)
+
+
+
+
+import seaborn as sns
+sns.lineplot(model.history.history)
+
+
+
+
+
+predictions = model.predict(x_test)
+mse = np.mean(np.power(x_test - predictions, 2), axis=1)
+
+
+
+threshold = np.percentile(mse, 95)  # Adjust the percentile as needed
+threshold
+
+
+
+anomalies = mse > threshold
+
+
+
+
+# Calculate the number of anomalies
+num_anomalies = np.sum(anomalies)
+print(f"Number of Anomalies: {num_anomalies}")
+
+
+
+
+
+#Plot the anomalies
+import matplotlib.pyplot as plt
+# plt.figure(figsize=(12, 6))
+plt.plot(mse, marker='o', linestyle='', markersize=3, label='MSE', )
+plt.axhline(threshold, color='r', linestyle='--', label='Anomaly Threshold')
+plt.xlabel('Sample Index')
+plt.ylabel('MSE')
+plt.title('Anomaly Detection Results')
+plt.legend()
+plt.show()
+
+
+
+
+
+
+plt.figure(figsize=(12, 6))
+plt.plot(x_test.iloc[0], label='Original ECG')
+plt.plot(predictions[0], label='Reconstructed ECG')
+plt.xlabel('Time')
+plt.ylabel('Amplitude')
+plt.legend()
+plt.title('Normal ECG')
+plt.show()
+
+
+
+
+
+
+
+import seaborn as sns
+from sklearn.metrics import confusion_matrix, classification_report
+
+plt.figure(figsize = (6, 4.75))
+sns.heatmap(confusion_matrix(anomalies, anomalies), annot = True, annot_kws = {"size": 16}, fmt = 'd')
+
+plt.xlabel("Predicted label", fontsize = 14)
+plt.ylabel("True label", fontsize = 14)
+plt.title("Confusion Matrix", fontsize = 14)
+plt.grid(False)
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import tensorflow as tf
+→ Imports TensorFlow.
+→ TensorFlow is used to build and train the Autoencoder.
+
+
+import pandas as pd
+→ Imports Pandas for reading and manipulating the dataset.
+
+
+import numpy as np
+→ Imports NumPy for numerical and mathematical operations.
+
+
+path = 'dataset/creditcardfraud-csv/creditcardfraud-csv/creditcard.csv'
+→ Stores the location of the credit card dataset in the variable path.
+
+
+df = pd.read_csv(path)
+→ Reads the CSV file using Pandas.
+→ The dataset is stored in the DataFrame df.
+
+
+df
+→ Displays the dataset.
+
+
+df = df.drop(['Time','Class'], axis=1)
+→ Removes the Time and Class columns.
+→ Time is removed because it is not used as an input feature.
+→ Class is removed because it contains the actual fraud/non-fraud label.
+→ axis=1 means columns are being removed.
+
+
+df
+→ Displays the modified dataset after removing Time and Class.
+
+
+# Preprocess the data
+→ Comment indicating that preprocessing is being performed.
+
+
+from sklearn.preprocessing import StandardScaler
+→ Imports StandardScaler.
+→ StandardScaler is used to standardize features.
+→ In this particular code, it is imported but not actually used.
+
+
+from sklearn.model_selection import train_test_split
+→ Imports train_test_split.
+→ It is used to divide the dataset into training and testing sets.
+
+
+x_train, x_test = train_test_split(df, test_size=0.2)
+→ Divides the dataset into training and testing data.
+→ 80% of the data is used for training.
+→ 20% is used for testing.
+
+
+print(x_train.shape[1])
+→ Prints the number of features/columns in the training dataset.
+
+
+print(x_test.shape[1])
+→ Prints the number of features/columns in the testing dataset.
+
+
+type(x_train)
+→ Displays the data type of x_train.
+→ It will normally show that x_train is a Pandas DataFrame.
+
+
+from keras.models import Model, Sequential
+→ Imports Model and Sequential from Keras.
+→ Sequential is used to create the neural network layer by layer.
+
+
+from tensorflow.keras.layers import Dense, Dropout
+→ Imports Dense and Dropout layers.
+→ Dense creates fully connected layers.
+→ Dropout can help reduce overfitting.
+→ Dropout is imported but not used in this code.
+
+
+from tensorflow.keras import layers, models
+→ Imports Keras layers and model-related functions.
+
+
+encoder = tf.keras.models.Sequential([
+→ Creates the Encoder part of the Autoencoder.
+→ The encoder compresses the input data into a smaller representation.
+
+
+layers.Input(shape=(x_train.shape[1],)),
+→ Defines the input layer.
+→ The number of input neurons is equal to the number of features in the dataset.
+
+
+layers.Dense(64, activation='relu'),
+→ Creates a Dense layer with 64 neurons.
+→ ReLU activation is used.
+
+
+layers.Dense(64, activation='relu'),
+→ Creates another Dense layer with 64 neurons.
+→ ReLU activation is used.
+
+
+layers.Dense(20, activation='relu')
+→ Creates the final encoder layer with only 20 neurons.
+→ The original data is compressed into 20 features.
+→ This compressed representation is called the latent representation.
+
+
+])
+→ Ends the encoder.
+
+
+decoder = tf.keras.models.Sequential([
+→ Creates the Decoder part of the Autoencoder.
+→ The decoder tries to reconstruct the original input from the compressed representation.
+
+
+layers.Input(shape=(20,)),
+→ Defines the decoder input.
+→ The input has 20 features because the encoder produces 20 values.
+
+
+layers.Dense(64, activation='relu'),
+→ Creates a Dense layer with 64 neurons.
+→ ReLU activation is used.
+
+
+layers.Dense(64, activation='relu'),
+→ Creates another Dense layer with 64 neurons.
+
+
+layers.Dense(x_train.shape[1], activation='linear')
+→ Creates the output layer.
+→ Number of neurons is equal to the original number of input features.
+→ Linear activation is used because the decoder needs to reconstruct continuous numerical values.
+
+
+])
+→ Ends the decoder.
+
+
+model = tf.keras.models.Sequential([
+    encoder,
+    decoder
+])
+→ Combines the encoder and decoder.
+→ The complete Autoencoder is:
+   Input → Encoder → Latent Representation → Decoder → Reconstruction
+
+
+model.compile(optimizer='adam', loss='mean_squared_error')
+→ Compiles the Autoencoder.
+
+
+optimizer='adam'
+→ Uses the Adam optimizer.
+→ Adam updates the neural network weights during training.
+
+
+loss='mean_squared_error'
+→ Uses Mean Squared Error (MSE) as the loss function.
+→ MSE measures the difference between the original input and reconstructed output.
+→ A smaller MSE means better reconstruction.
+
+
+history = model.fit(
+→ Starts training the Autoencoder.
+→ Training information is stored in the variable history.
+
+
+x_train,
+→ Input data given to the Autoencoder.
+
+
+x_train,
+→ Target output is also x_train.
+→ This is important because an Autoencoder learns to reconstruct its own input.
+
+
+validation_data=(x_test,x_test),
+→ Uses test data to check reconstruction performance after each epoch.
+
+
+epochs=5,
+→ The complete training data is processed 5 times.
+
+
+batch_size=100,
+→ The model processes 100 samples at a time before updating weights.
+
+
+shuffle=True
+→ Randomly shuffles the training data before each epoch.
+
+
+)
+→ Ends the training process.
+
+
+import seaborn as sns
+→ Imports Seaborn for visualization.
+
+
+sns.lineplot(model.history.history)
+→ Plots the training history.
+→ It helps visualize how the loss changes during training.
+
+
+predictions = model.predict(x_test)
+→ Uses the trained Autoencoder to reconstruct the test data.
+→ predictions contains the reconstructed values.
+
+
+mse = np.mean(np.power(x_test - predictions, 2), axis=1)
+→ Calculates the reconstruction error for every test sample.
+→ x_test = original data.
+→ predictions = reconstructed data.
+→ The difference is squared.
+→ The mean of squared differences gives MSE.
+→ A high MSE indicates that the model could not reconstruct the sample well.
+
+
+threshold = np.percentile(mse, 95)
+→ Calculates the 95th percentile of the MSE values.
+→ This value is selected as the anomaly threshold.
+→ Approximately the highest 5% of reconstruction errors will be considered anomalies.
+
+
+threshold
+→ Displays the calculated threshold value.
+
+
+anomalies = mse > threshold
+→ Checks which samples have MSE greater than the threshold.
+→ If MSE > threshold → anomaly.
+→ If MSE <= threshold → normal.
+
+
+# Calculate the number of anomalies
+→ Comment explaining the next operation.
+
+
+num_anomalies = np.sum(anomalies)
+→ Counts the number of samples classified as anomalies.
+
+
+print(f"Number of Anomalies: {num_anomalies}")
+→ Displays the total number of detected anomalies.
+
+
+#Plot the anomalies
+→ Comment indicating that the anomalies will be plotted.
+
+
+import matplotlib.pyplot as plt
+→ Imports Matplotlib for plotting graphs.
+
+
+plt.plot(mse, marker='o', linestyle='', markersize=3, label='MSE')
+→ Plots the reconstruction error of each test sample.
+→ Each point represents the MSE of one sample.
+
+
+plt.axhline(threshold, color='r', linestyle='--', label='Anomaly Threshold')
+→ Draws a horizontal line representing the anomaly threshold.
+→ Points above this line are considered anomalies.
+
+
+plt.xlabel('Sample Index')
+→ Labels the X-axis as Sample Index.
+
+
+plt.ylabel('MSE')
+→ Labels the Y-axis as Mean Squared Error.
+
+
+plt.title('Anomaly Detection Results')
+→ Gives a title to the graph.
+
+
+plt.legend()
+→ Displays the graph legend.
+
+
+plt.show()
+→ Displays the graph.
+
+
+plt.figure(figsize=(12, 6))
+→ Creates a figure with width 12 and height 6.
+
+
+plt.plot(x_test.iloc[0], label='Original ECG')
+→ Plots the first test sample.
+→ The label says "Original ECG".
+→ Note: This dataset is credit-card data, not ECG data. The "ECG" label appears to be copied from another example and is not technically correct here.
+
+
+plt.plot(predictions[0], label='Reconstructed ECG')
+→ Plots the reconstructed first test sample.
+→ Again, "Reconstructed ECG" is only a label and does not represent an ECG in this dataset.
+
+
+plt.xlabel('Time')
+→ Labels the X-axis as Time.
+→ Technically, this is not really time because the Time column was removed.
+
+
+plt.ylabel('Amplitude')
+→ Labels the Y-axis as Amplitude.
+→ For this credit-card dataset, this label is also not technically appropriate.
+
+
+plt.legend()
+→ Displays the legend.
+
+
+plt.title('Normal ECG')
+→ Gives the graph the title "Normal ECG".
+→ This title is copied from an ECG example and should ideally be changed for credit-card anomaly detection.
+
+
+plt.show()
+→ Displays the graph.
+
+
+import seaborn as sns
+→ Imports Seaborn for visualization.
+
+
+from sklearn.metrics import confusion_matrix, classification_report
+→ Imports functions for calculating a confusion matrix and classification report.
+
+
+plt.figure(figsize=(6, 4.75))
+→ Creates a figure of size 6 × 4.75.
+
+
+sns.heatmap(
+→ Creates a heatmap to visualize the confusion matrix.
+
+
+confusion_matrix(anomalies, anomalies)
+→ Creates a confusion matrix by comparing anomalies with itself.
+→ IMPORTANT: This does NOT compare predictions with the actual fraud labels.
+→ Therefore, this is not a valid fraud-detection confusion matrix.
+
+
+annot=True
+→ Displays the numerical values inside the heatmap.
+
+
+annot_kws={"size": 16}
+→ Sets the size of the numbers displayed in the heatmap.
+
+
+fmt='d'
+→ Displays the values as integers.
+
+
+plt.xlabel("Predicted label", fontsize=14)
+→ Labels the X-axis as Predicted label.
+
+
+plt.ylabel("True label", fontsize=14)
+→ Labels the Y-axis as True label.
+
+
+plt.title("Confusion Matrix", fontsize=14)
+→ Gives the heatmap the title "Confusion Matrix".
+
+
+plt.grid(False)
+→ Turns off the grid.
+
+
+plt.show()
+→ Displays the confusion matrix.
